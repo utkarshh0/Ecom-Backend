@@ -35,7 +35,7 @@ const signup = async (req, res) => {
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' })
         }
-        const isUserExist = User.findOne({email})
+        const isUserExist = await User.findOne({email})
 
         if(isUserExist) return await res.status(400).json({ message : 'User Already exist with this email'})
         const user = new User({ name, email, password, role })
