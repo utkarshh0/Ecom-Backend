@@ -6,8 +6,11 @@ const login = async (req, res) => {
     
     try{
         const { email, password } = req.body
+        
         const user = await User.findOne({email})
-        if(!user || !user.comparePassword(password)){
+        const isValid = await user.comparePassword(password)
+
+        if(!user || !isValid){
             return res.status(401).json({ error : 'Invalid Credentials'})
         }
 
