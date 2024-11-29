@@ -1,6 +1,8 @@
-import { Product } from '../models/productModel.js'
+import { Product } from "../models/productModel.js"
+
 
 const getAllProducts = async (req, res) => {
+    
     try {
         const seller = req.user.id 
 
@@ -16,9 +18,38 @@ const getAllProducts = async (req, res) => {
     }
 }
 
-const addProduct = async (req, res) => {
+const getProductById = async (req, res) => {
+
     try {
-        const seller = req.user.id 
+        const { productId } = req.body
+
+        if (!productId) {
+            return res.status(400).json({ message: 'Product ID is required' })
+        }
+
+        const product = await Product.findById(productId)
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' })
+        }
+
+        return res.status(200).json({ product })
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal Server Error' })
+    }
+}
+
+const addProduct = async (req, res) => {
+    
+    try {
+
+        // For normal users, use req.user.id
+        let seller = req.user.id
+
+        // If the request is from admin, userId will be in req.body
+        if (req.user.role === 'admin') {
+            seller = req.body.userId // Admin passes userId in the body to update any user's profile
+        }
 
         const { title, description, price, category, stock } = req.body
         if (!title || !description || !price || !category || !stock) {
@@ -36,13 +67,22 @@ const addProduct = async (req, res) => {
 }
 
 const deleteProduct = async (req, res) => {
+    
     try {
         const { productId } = req.body
+        // For normal users, use req.user.id
+        let seller = req.user.id
+
+        // If the request is from admin, userId will be in req.body
+        if (req.user.role === 'admin') {
+            seller = req.body.userId // Admin passes userId in the body to update any user's profile
+        }
+
         if (!productId) {
             return res.status(400).json({ message: 'Product ID is required' })
         }
 
-        const product = await Product.findOneAndDelete({ _id: productId, seller: req.user.id })
+        const product = await Product.findOneAndDelete({ _id: productId, seller})
         if (!product) {
             return res.status(404).json({ message: 'Product not found or not owned by you' })
         }
@@ -55,14 +95,23 @@ const deleteProduct = async (req, res) => {
 }
 
 const updateProduct = async (req, res) => {
+    
     try {
         const { productId, ...updates } = req.body
+        // For normal users, use req.user.id
+        let seller = req.user.id
+
+        // If the request is from admin, userId will be in req.body
+        if (req.user.role === 'admin') {
+            seller = req.body.userId // Admin passes userId in the body to update any user's profile
+        }
+
         if (!productId) {
             return res.status(400).json({ message: 'Product ID is required' })
         }
 
         const updatedProduct = await Product.findOneAndUpdate(
-            { _id: productId, seller: req.user.id },
+            { _id: productId, seller},
             updates,
             { new: true }
         )
@@ -77,4 +126,5 @@ const updateProduct = async (req, res) => {
     }
 }
 
-export { getAllProducts, addProduct, updateProduct, deleteProduct }
+
+export {getAllProducts, getProductById, addProduct, updateProduct, deleteProduct}

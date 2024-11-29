@@ -1,11 +1,28 @@
-import { Order } from '../models/orderModel.js'
-import { Product } from '../models/productModel.js';
-import { User } from '../models/userModel.js';
+import { Order } from "../models/orderModel.js"
+import { Product } from "../models/productModel.js"
+
 
 const getAllPlacedOrders = async (req, res) => {
 
     try{
-        const { id } = req.user
+        const orders = await Order.find()
+        return res.status(200).json({orders})
+    } catch(err){
+        console.error(err)
+        return res.status(500).json({ error : 'Error Fetching Orders'})
+    }
+}
+
+const getAllPlacedOrdersByUser = async (req, res) => {
+
+    try{
+        // For normal users, use req.user.id
+        let id = req.user.id
+
+        // If the request is from admin, userId will be in req.body
+        if (req.user.role === 'admin') {
+            id = req.body.userId // Admin passes userId in the body to update any user's profile
+        }
         const orders = await Order.find({user : id})
 
         return res.status(200).json(orders)
@@ -15,11 +32,11 @@ const getAllPlacedOrders = async (req, res) => {
     }
 }
 
-
 const placeOrder = async (req, res) => {
     try {
         const { productId, quantity, shippingAddress, paymentMethod, isPaid, isDelivered } = req.body;
         const userId = req.user.id;
+
 
         if (!productId || !quantity || !shippingAddress || !paymentMethod) {
             return res.status(400).json({ message: 'All fields are required' });
@@ -54,15 +71,31 @@ const placeOrder = async (req, res) => {
 };
 
 
+const cancelOrder = async (req, res) => {
+    try {
+        const orderId = req.body.orderId  // Get the orderId from the request params
 
+        // Find the order by its ID
+        const order = await Order.findById(orderId)
 
-const cancelOrder = (req, res) => {
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' })
+        }
 
-    res.status(200).json({
+        // Check if the order is already delivered (so it cannot be cancelled)
+        if (order.isDelivered) {
+            return res.status(400).json({ error: 'Order has already been delivered and cannot be cancelled' })
+        }
 
-        msg : 'Cancel order'
-    })
+        // Delete the order if it's not delivered
+        await Order.findByIdAndDelete(orderId)
 
+        return res.status(200).json({ message: 'Order has been successfully cancelled and deleted' })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({ error: 'Error cancelling and deleting the order' })
+    }
 }
 
-export { getAllPlacedOrders, placeOrder, cancelOrder }
+
+export {getAllPlacedOrders, getAllPlacedOrdersByUser, placeOrder, cancelOrder}

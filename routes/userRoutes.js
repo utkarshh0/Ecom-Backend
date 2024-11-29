@@ -1,14 +1,17 @@
 import express from 'express'
-import { getAllPlacedOrders, placeOrder, cancelOrder } from '../controllers/orderController.js'
-import { authenticate } from '../middlewares/authMiddleware.js'
+import { getProfile, updateProfile, deleteProfile } from '../controllers/userController.js'
+import { authorize } from '../middlewares/roleMiddleware.js'
+
 
 const router = express.Router()
 
-router.get('/orders', getAllPlacedOrders)
+router.use(authorize('user', 'admin'))
 
-router.post('/order', placeOrder)
+router.get('/profile', getProfile)
 
-router.delete('/order/:orderId', cancelOrder)
+router.patch('/profile', updateProfile)
+
+router.delete('/profile', deleteProfile)
 
 
 export default router
